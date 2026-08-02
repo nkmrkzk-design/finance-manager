@@ -236,12 +236,16 @@ function getFilteredSortedCards() {
   const fCategory = document.getElementById("filterCategory").value;
   const fHolder = document.getElementById("filterHolder").value;
   const fCancel = document.getElementById("filterCancel").value;
+  const fRank = document.getElementById("filterRank").value;
+  const fBrand = document.getElementById("filterBrand").value;
   const sortKey = document.getElementById("sortKey").value;
 
   let list = data.cards.filter(c => {
     if (fCategory && c.category !== fCategory) return false;
     if (fHolder && c.holderType !== fHolder) return false;
     if (fCancel && c.cancelPlanned !== fCancel) return false;
+    if (fRank && (c.rankType || "normal") !== fRank) return false;
+    if (fBrand && c.brand !== fBrand) return false;
     if (search) {
       const hay = [c.name, c.last4, c.memo, c.purpose, c.holderName, c.etcVehicle, rankDisplay(c)].join(" ").toLowerCase();
       if (!hay.includes(search)) return false;
@@ -1052,7 +1056,7 @@ document.querySelectorAll("[data-close-modal]").forEach(btn => {
 
 /* ---------- 検索・フィルタ・並び替え ---------- */
 
-["cardSearchInput", "filterCategory", "filterHolder", "filterCancel", "sortKey"].forEach(id => {
+["cardSearchInput", "filterCategory", "filterHolder", "filterCancel", "filterRank", "filterBrand", "sortKey"].forEach(id => {
   document.getElementById(id).addEventListener("input", renderCardList);
   document.getElementById(id).addEventListener("change", renderCardList);
 });
