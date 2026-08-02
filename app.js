@@ -287,8 +287,7 @@ function renderCardList() {
     const badges = [
       `<span class="badge category-${card.category}">${CATEGORY_LABEL[card.category] || card.category}</span>`
     ];
-    if (card.cardFormat === "virtual") badges.push(`<span class="badge">バーチャル</span>`);
-    if (card.cardFormat === "both") badges.push(`<span class="badge">リアル+バーチャル</span>`);
+    badges.push(`<span class="badge">${escapeHtml(CARD_FORMAT_LABEL[card.cardFormat] || CARD_FORMAT_LABEL.physical)}</span>`);
     if (card.brand) badges.push(`<span class="badge">${escapeHtml(BRAND_LABEL[card.brand] || card.brand)}</span>`);
     if (rankDisplay(card)) badges.push(`<span class="badge">${escapeHtml(rankDisplay(card))}</span>`);
     if (card.holderType === "family") {
