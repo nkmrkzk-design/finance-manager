@@ -135,6 +135,12 @@ function seedSampleData() {
 
 /* ---------- ユーティリティ ---------- */
 
+function formatDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+}
+
 function formatYen(n) {
   const num = Number(n);
   if (!num) return "";
@@ -621,7 +627,7 @@ function renderMoveHistory(paymentId) {
   }
   el.innerHTML = "<b>移動履歴</b>" + p.history.map(h => `
     <div class="move-history-item">
-      ${escapeHtml(h.fromCardId ? cardName(h.fromCardId) : "―")} → ${escapeHtml(cardName(h.toCardId))}
+      ${formatDate(h.date)}: ${escapeHtml(h.fromCardId ? cardName(h.fromCardId) : "―")} → ${escapeHtml(cardName(h.toCardId))}
       ${h.reason ? " / " + escapeHtml(h.reason) : ""}
     </div>
   `).join("");
