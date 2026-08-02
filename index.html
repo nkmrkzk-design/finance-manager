@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>カード・銀行管理</title>
+<meta name="description" content="クレジットカード等と、その引き落とし先の銀行口座をまとめて一元管理するツール">
+<meta name="theme-color" content="#4f46e5">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="カード・銀行管理">
+<link rel="icon" href="icons/icon-192.png">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-top">
+    <h1 id="screenTitle">カード管理</h1>
+    <div class="header-actions">
+      <button id="btnBanks" class="btn btn-icon screen-only screen-bank" hidden aria-label="銀行を管理">🏦 銀行</button>
+      <button id="btnAddCard" class="btn btn-primary btn-icon screen-only screen-card" aria-label="カードを追加">＋ 追加</button>
+      <button id="btnAddWithdrawal" class="btn btn-primary btn-icon screen-only screen-bank" hidden aria-label="引き落としを追加">＋ 追加</button>
+    </div>
+  </div>
+  <nav class="tab-switcher">
+    <button class="tab-btn active" data-screen="card" id="tabCard">💳 カード管理</button>
+    <button class="tab-btn" data-screen="bank" id="tabBank">🏦 銀行管理</button>
+  </nav>
+</header>
+
+<!-- ==================== カード管理画面 ==================== -->
+<section id="screenCard" class="screen">
+
+<section id="cardSummary" class="summary"></section>
+
+<section class="toolbar">
+  <input id="cardSearchInput" type="search" placeholder="カード名・下4桁・備考で検索" autocomplete="off">
+  <div class="filter-row">
+    <select id="filterCategory">
+      <option value="">種別: すべて</option>
+      <option value="credit">クレジット</option>
+      <option value="etc">ETC</option>
+      <option value="prepaid">プリペイド</option>
+      <option value="debit">デビット</option>
+    </select>
+    <select id="filterHolder">
+      <option value="">名義: すべて</option>
+      <option value="self">本人</option>
+      <option value="family">家族</option>
+    </select>
+    <select id="filterCancel">
+      <option value="">解約予定: すべて</option>
+      <option value="yes">あり</option>
+      <option value="no">なし</option>
+    </select>
+    <select id="sortKey">
+      <option value="name">並び替え: 名称</option>
+      <option value="category">並び替え: 種別</option>
+      <option value="rewardRate">並び替え: 還元率</option>
+      <option value="creditLimit">並び替え: カード利用枠</option>
+      <option value="paymentDay">並び替え: 引落日</option>
+    </select>
+  </div>
+  <p class="action-row">
+    <button id="btnImportLegacyCard" type="button" class="btn-link">🗂 既存のカード管理アプリのデータを読み込む</button>
+    <input id="legacyCardImportFile" type="file" accept="application/json" hidden>
+  </p>
+</section>
+
+<main id="cardList" class="card-list"></main>
+
+<p id="cardEmptyState" class="empty-state" hidden>該当するカードがありません。</p>
+
+</section>
+
+<!-- ==================== 銀行管理画面 ==================== -->
+<section id="screenBank" class="screen" hidden>
+
+<section id="bankSummary" class="summary"></section>
+
+<section class="toolbar">
+  <input id="withdrawalSearchInput" type="search" placeholder="サービス名・メモで検索" autocomplete="off">
+  <div class="filter-row">
+    <select id="filterBank">
+      <option value="">銀行: すべて</option>
+    </select>
+    <select id="filterWithdrawalCategory">
+      <option value="">用途: すべて</option>
+      <option value="subscription">サブスク</option>
+      <option value="utility">公共料金(電気・ガス・水道)</option>
+      <option value="rent">家賃</option>
+      <option value="insurance">保険</option>
+      <option value="loan">ローン・分割払い</option>
+      <option value="telecom">通信費</option>
+      <option value="membership">会費・その他固定費</option>
+      <option value="other">その他</option>
+    </select>
+    <select id="filterWithdrawalCancel">
+      <option value="">解約予定: すべて</option>
+      <option value="yes">あり</option>
+      <option value="no">なし</option>
+    </select>
+    <select id="sortWithdrawalKey">
+      <option value="day">並び替え: 引き落とし日</option>
+      <option value="bank">並び替え: 銀行</option>
+      <option value="amount">並び替え: 金額(高い順)</option>
+      <option value="name">並び替え: サービス名</option>
+    </select>
+  </div>
+  <p id="filterSummary" class="filter-summary"></p>
+  <p class="action-row">
+    <button id="btnSyncFromCards" type="button" class="btn-link">🔗 カードの固定支払いを反映</button>
+  </p>
+</section>
+
+<main id="withdrawalList" class="card-list"></main>
+
+<p id="withdrawalEmptyState" class="empty-state" hidden>該当する引き落としがありません。</p>
+
+</section>
+
+<footer class="app-footer">
+  <button id="btnExport" class="btn btn-ghost">JSONエクスポート</button>
+  <label class="btn btn-ghost file-label">
+    JSONインポート
+    <input id="importFile" type="file" accept="application/json" hidden>
+  </label>
+  <button id="btnExportCsv" class="btn btn-ghost">CSV出力</button>
+</footer>
+
+<!-- カード追加・編集モーダル -->
+<div id="cardModal" class="modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="cardModalTitle">カードを追加</h2>
+      <button class="btn-close" data-close-modal aria-label="閉じる">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="cardForm">
+        <input type="hidden" id="cardId">
+
+        <label>カード名称 <span class="req">必須</span>
+          <input id="f_name" type="text" required placeholder="例: 楽天カード">
+        </label>
+
+        <label>カード番号 下4桁
+          <input id="f_last4" type="text" inputmode="numeric" pattern="[0-9]{0,4}" maxlength="4" placeholder="例: 1234">
+        </label>
+
+        <label>種別 <span class="req">必須</span>
+          <select id="f_category" required>
+            <option value="credit">クレジット</option>
+            <option value="etc">ETC</option>
+            <option value="prepaid">プリペイド</option>
+            <option value="debit">デビット</option>
+          </select>
+        </label>
+
+        <label>カードの形態
+          <select id="f_cardFormat">
+            <option value="physical">リアルカード</option>
+            <option value="virtual">バーチャルカード</option>
+            <option value="both">リアル・バーチャル両方</option>
+          </select>
+        </label>
+
+        <label id="wrap_etcVehicle" hidden>ETC対象車両
+          <input id="f_etcVehicle" type="text" placeholder="例: 自家用車(品川300 あ12-34)">
+        </label>
+
+        <label>国際ブランド
+          <select id="f_brand">
+            <option value="">未設定</option>
+            <option value="visa">VISA</option>
+            <option value="mastercard">Mastercard</option>
+            <option value="jcb">JCB</option>
+            <option value="amex">AMEX</option>
+            <option value="diners">Diners</option>
+          </select>
+        </label>
+
+        <label>名義区分
+          <select id="f_holderType">
+            <option value="self">本人</option>
+            <option value="family">家族</option>
+          </select>
+        </label>
+
+        <label id="wrap_holderName" hidden>家族の名前
+          <input id="f_holderName" type="text" placeholder="例: 配偶者、長男 など">
+        </label>
+
+        <label>利用目的
+          <input id="f_purpose" type="text" placeholder="例: 生活費全般、ガソリン代 など">
+        </label>
+
+        <div class="field-row">
+          <label>還元率(%)
+            <input id="f_rewardRate" type="number" step="0.01" min="0" placeholder="例: 1.0">
+          </label>
+          <label id="wrap_rewardCalcType">還元率の計算方法
+            <select id="f_rewardCalcType">
+              <option value="per_transaction">1決済毎</option>
+              <option value="monthly_total">月額累計</option>
+            </select>
+          </label>
+        </div>
+
+        <label id="wrap_pointsEarned">貯まるポイント
+          <input id="f_pointsEarned" type="text" placeholder="例: 楽天ポイント、Vポイント など">
+        </label>
+
+        <label id="wrap_creditLimit">カード利用枠(円)
+          <input id="f_creditLimit" type="number" step="1" min="0" placeholder="例: 500000">
+        </label>
+
+        <div id="wrap_debitLimits" hidden>
+          <div class="field-row">
+            <label>1回の限度額(円)
+              <input id="f_debitPerTxLimit" type="number" step="1" min="0" placeholder="例: 100000">
+            </label>
+            <label>1日の限度額(円)
+              <input id="f_debitDailyLimit" type="number" step="1" min="0" placeholder="例: 300000">
+            </label>
+          </div>
+          <label>1ヶ月の限度額(円)
+            <input id="f_debitMonthlyLimit" type="number" step="1" min="0" placeholder="例: 500000">
+          </label>
+        </div>
+
+        <label id="wrap_balanceAccount" hidden>残高口座
+          <input id="f_balanceAccount" type="text" placeholder="例: au PAY 残高、COIN+ 残高">
+        </label>
+
+        <div class="field-row">
+          <label>年会費
+            <select id="f_annualFeeType">
+              <option value="free">無料</option>
+              <option value="conditional_free">条件達成で無料</option>
+              <option value="paid">有料</option>
+            </select>
+          </label>
+          <label id="wrap_annualFeeAmount" hidden><span id="lbl_annualFeeAmount">年会費(円)</span>
+            <input id="f_annualFeeAmount" type="number" step="1" min="0" placeholder="例: 11000">
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label>カードランク
+            <select id="f_rankType">
+              <option value="normal">ノーマル</option>
+              <option value="gold">ゴールド</option>
+              <option value="platinum">プラチナ</option>
+              <option value="black">ブラック</option>
+              <option value="custom">その他(自由入力)</option>
+            </select>
+          </label>
+          <label id="wrap_rankCustom" hidden>ランク名
+            <input id="f_rankCustom" type="text" placeholder="例: セゾンパール">
+          </label>
+        </div>
+
+        <div id="wrap_billingInfo" hidden>
+          <div class="field-row">
+            <label>締め日
+              <select id="f_closingDay"></select>
+            </label>
+            <label>引落日
+              <select id="f_paymentDay"></select>
+            </label>
+          </div>
+          <label>引き落とし口座
+            <input id="f_paymentAccount" type="text" placeholder="例: ○○銀行 普通 1234567">
+          </label>
+          <label>紐づける銀行(銀行管理で登録した銀行)
+            <select id="f_linkedBankId">
+              <option value="">未設定</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label>解約予定
+            <select id="f_cancelPlanned">
+              <option value="no">なし</option>
+              <option value="yes">あり</option>
+            </select>
+          </label>
+          <label>解約予定の備考
+            <input id="f_cancelNote" type="text" placeholder="例: 2026年内に解約予定">
+          </label>
+        </div>
+
+        <label>その他備考
+          <textarea id="f_memo" rows="2" placeholder="自由記入"></textarea>
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" id="btnDeleteCard" class="btn btn-danger" hidden>このカードを削除</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+
+      <section id="paymentsSection" class="payments-section" hidden>
+        <div class="payments-header">
+          <h3>固定支払い(サブスク・固定費)</h3>
+          <button id="btnAddPayment" class="btn btn-secondary btn-small">＋ 固定支払いを追加</button>
+        </div>
+        <ul id="paymentList" class="payment-list"></ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- 固定支払い追加・編集モーダル -->
+<div id="paymentModal" class="modal-overlay" hidden>
+  <div class="modal modal-small">
+    <div class="modal-header">
+      <h2 id="paymentModalTitle">固定支払いを追加</h2>
+      <button class="btn-close" data-close-modal aria-label="閉じる">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="paymentForm">
+        <input type="hidden" id="p_id">
+        <input type="hidden" id="p_cardId">
+        <label>支払い先名 <span class="req">必須</span>
+          <input id="p_name" type="text" required placeholder="例: 電気代、Netflix">
+        </label>
+        <label>月額(円)
+          <input id="p_amount" type="number" step="1" min="0" placeholder="例: 3000">
+        </label>
+        <label>備考
+          <input id="p_note" type="text" placeholder="自由記入">
+        </label>
+        <div class="modal-actions">
+          <button type="button" id="btnDeletePayment" class="btn btn-danger" hidden>削除</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 固定支払い移動モーダル -->
+<div id="moveModal" class="modal-overlay" hidden>
+  <div class="modal modal-small">
+    <div class="modal-header">
+      <h2>固定支払いを移動</h2>
+      <button class="btn-close" data-close-modal aria-label="閉じる">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="moveForm">
+        <p id="movePaymentLabel" class="move-label"></p>
+        <label>移動先カード <span class="req">必須</span>
+          <select id="m_toCardId" required></select>
+        </label>
+        <label>移動理由(任意)
+          <input id="m_reason" type="text" placeholder="例: カード新規発行に伴う切替、解約に伴う移行 など">
+        </label>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">移動する</button>
+        </div>
+      </form>
+      <div id="moveHistory" class="move-history"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 引き落とし追加・編集モーダル -->
+<div id="withdrawalModal" class="modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="withdrawalModalTitle">引き落としを追加</h2>
+      <button class="btn-close" data-close-modal aria-label="閉じる">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="withdrawalForm">
+        <input type="hidden" id="w_id">
+
+        <label>銀行 <span class="req">必須</span>
+          <select id="w_bankId" required></select>
+        </label>
+
+        <label>サービス名・支払い先 <span class="req">必須</span>
+          <input id="w_serviceName" type="text" required placeholder="例: Netflix、東京電力、○○マンション家賃">
+        </label>
+
+        <label>利用用途
+          <select id="w_category">
+            <option value="subscription">サブスク</option>
+            <option value="utility">公共料金(電気・ガス・水道)</option>
+            <option value="rent">家賃</option>
+            <option value="insurance">保険</option>
+            <option value="loan">ローン・分割払い</option>
+            <option value="telecom">通信費</option>
+            <option value="membership">会費・その他固定費</option>
+            <option value="other">その他</option>
+          </select>
+        </label>
+
+        <div class="field-row">
+          <label>引き落とし日
+            <select id="w_day"></select>
+          </label>
+          <label>金額(円)
+            <input id="w_amount" type="number" step="1" min="0" placeholder="例: 1490">
+          </label>
+        </div>
+
+        <label>解約予定
+          <select id="w_cancelPlanned">
+            <option value="no">なし</option>
+            <option value="yes">あり</option>
+          </select>
+        </label>
+
+        <label id="wrap_cancelNote" hidden>解約予定の備考
+          <input id="w_cancelNote" type="text" placeholder="例: 2026年内に解約予定">
+        </label>
+
+        <label>その他備考
+          <textarea id="w_memo" rows="2" placeholder="自由記入"></textarea>
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" id="btnDeleteWithdrawal" class="btn btn-danger" hidden>この引き落としを削除</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 銀行管理モーダル -->
+<div id="banksModal" class="modal-overlay" hidden>
+  <div class="modal modal-small">
+    <div class="modal-header">
+      <h2>銀行を管理</h2>
+      <button class="btn-close" data-close-modal aria-label="閉じる">×</button>
+    </div>
+    <div class="modal-body">
+      <button id="btnAddBank" class="btn btn-secondary btn-small" type="button">＋ 銀行を追加</button>
+      <ul id="bankList" class="bank-list"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- 銀行追加・編集モーダル -->
+<div id="bankModal" class="modal-overlay" hidden>
+  <div class="modal modal-small">
+    <div class="modal-header">
+      <h2 id="bankModalTitle">銀行を追加</h2>
+      <button class="btn-close" data-close-modal aria-label="閉じる">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="bankForm">
+        <input type="hidden" id="b_id">
+        <label>銀行名 <span class="req">必須</span>
+          <input id="b_name" type="text" required placeholder="例: 楽天銀行、○○地方銀行">
+        </label>
+        <label>支店
+          <input id="b_branchName" type="text" placeholder="例: 渋谷支店、第一営業支店">
+        </label>
+        <label>口座番号
+          <input id="b_accountNumber" type="text" placeholder="例: 普通 1234567">
+        </label>
+        <label>種別
+          <select id="b_bankType">
+            <option value="net">ネット銀行</option>
+            <option value="regional">地方銀行</option>
+            <option value="city">都市銀行</option>
+            <option value="shinkin">信用金庫・信用組合</option>
+            <option value="yucho">ゆうちょ銀行</option>
+            <option value="other">その他</option>
+          </select>
+        </label>
+        <label>その他備考
+          <textarea id="b_memo" rows="2" placeholder="自由記入"></textarea>
+        </label>
+        <div class="modal-actions">
+          <button type="button" id="btnDeleteBank" class="btn btn-danger" hidden>この銀行を削除</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
