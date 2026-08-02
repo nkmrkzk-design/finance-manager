@@ -475,12 +475,20 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   margin-bottom: 8px;
 }
 
 .payments-header h3 {
   margin: 0;
   font-size: 0.95rem;
+  flex: 1 1 auto;
+  min-width: 160px;
+}
+
+.payments-header .btn-small {
+  flex: 0 0 auto;
 }
 
 .payment-list {
