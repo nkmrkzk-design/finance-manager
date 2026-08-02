@@ -152,9 +152,13 @@ function cardName(cardId) {
   return c ? c.name : "(削除済みカード)";
 }
 
+function bankDisplayName(b) {
+  return b.name + (b.branchName ? " " + b.branchName : "");
+}
+
 function bankName(bankId) {
   const b = data.banks.find(b => b.id === bankId);
-  return b ? b.name : "(削除済みの銀行)";
+  return b ? bankDisplayName(b) : "(削除済みの銀行)";
 }
 
 function paymentsForCard(cardId) {
@@ -777,7 +781,7 @@ function renderWithdrawalList() {
 /* ---------- 銀行セレクトの再構築(絞り込み・カードの紐づけ・引き落としの銀行) ---------- */
 
 function refreshAllBankSelects() {
-  const options = data.banks.map(b => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join("");
+  const options = data.banks.map(b => `<option value="${b.id}">${escapeHtml(bankDisplayName(b))}</option>`).join("");
 
   const filterBank = document.getElementById("filterBank");
   const currentFilter = filterBank.value;
