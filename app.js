@@ -314,7 +314,7 @@ function renderCardList() {
         ${card.category === "prepaid" && card.balanceAccount ? `<span>残高口座: <b>${escapeHtml(card.balanceAccount)}</b></span>` : ""}
         ${card.category === "etc" && card.etcVehicle ? `<span>対象車両: <b>${escapeHtml(card.etcVehicle)}</b></span>` : ""}
         ${(card.category === "credit" || card.category === "etc") && (card.closingDay || card.paymentDay) ? `<span>締め<b>${dayLabel(card.closingDay)}</b> / 引落<b>${dayLabel(card.paymentDay)}</b></span>` : ""}
-        ${(card.category === "credit" || card.category === "etc") && card.paymentAccount ? `<span>引落口座: <b>${escapeHtml(card.paymentAccount)}</b></span>` : ""}
+        ${(card.category === "credit" || card.category === "etc") && card.paymentAccount ? `<span>引落口座: <b>${escapeHtml(card.paymentAccount)}${card.branchName ? " " + escapeHtml(card.branchName) : ""}</b></span>` : ""}
       </div>
       ${payments.length ? `<div class="card-item-payments">固定支払い ${payments.length}件 / 月額計 ${formatYen(payments.reduce((s, p) => s + (Number(p.amount) || 0), 0))}</div>` : ""}
     `;
@@ -354,6 +354,7 @@ function openCardModal(cardId) {
     document.getElementById("f_closingDay").value = "";
     document.getElementById("f_paymentDay").value = "";
     document.getElementById("f_paymentAccount").value = "";
+    document.getElementById("f_branchName").value = "";
     document.getElementById("f_linkedBankId").value = "";
     document.getElementById("f_debitPerTxLimit").value = "";
     document.getElementById("f_debitDailyLimit").value = "";
@@ -393,6 +394,7 @@ function fillCardForm(card) {
   document.getElementById("f_closingDay").value = card.closingDay || "";
   document.getElementById("f_paymentDay").value = card.paymentDay || "";
   document.getElementById("f_paymentAccount").value = card.paymentAccount || "";
+  document.getElementById("f_branchName").value = card.branchName || "";
   document.getElementById("f_linkedBankId").value = data.banks.some(b => b.id === card.linkedBankId) ? card.linkedBankId : "";
   document.getElementById("f_cancelPlanned").value = card.cancelPlanned || "no";
   document.getElementById("f_cancelNote").value = card.cancelNote || "";
@@ -460,6 +462,7 @@ function readCardFormInto(card) {
   card.closingDay = document.getElementById("f_closingDay").value;
   card.paymentDay = document.getElementById("f_paymentDay").value;
   card.paymentAccount = document.getElementById("f_paymentAccount").value.trim();
+  card.branchName = document.getElementById("f_branchName").value.trim();
   card.linkedBankId = document.getElementById("f_linkedBankId").value;
   card.cancelPlanned = document.getElementById("f_cancelPlanned").value;
   card.cancelNote = document.getElementById("f_cancelNote").value.trim();
@@ -1147,7 +1150,7 @@ document.getElementById("btnExportCsv").addEventListener("click", () => {
     ]);
     downloadCsv(headers, rows, `finance-manager-withdrawals-${today}.csv`);
   } else {
-    const headers = ["カード名称", "下4桁", "種別", "カードの形態", "国際ブランド", "カードランク", "名義区分", "家族の名前", "利用目的", "還元率(%)", "還元率計算方法", "貯まるポイント", "年会費区分", "年会費(円)", "カード利用枠", "1回の限度額", "1日の限度額", "1ヶ月の限度額", "残高口座", "締め日", "引落日", "引き落とし口座", "紐づける銀行", "解約予定", "解約備考", "ETC対象車両", "備考"];
+    const headers = ["カード名称", "下4桁", "種別", "カードの形態", "国際ブランド", "カードランク", "名義区分", "家族の名前", "利用目的", "還元率(%)", "還元率計算方法", "貯まるポイント", "年会費区分", "年会費(円)", "カード利用枠", "1回の限度額", "1日の限度額", "1ヶ月の限度額", "残高口座", "締め日", "引落日", "引き落とし口座", "支店名", "紐づける銀行", "解約予定", "解約備考", "ETC対象車両", "備考"];
     const rows = data.cards.map(c => [
       c.name, c.last4, CATEGORY_LABEL[c.category] || c.category, CARD_FORMAT_LABEL[c.cardFormat] || "", BRAND_LABEL[c.brand] || "", rankDisplay(c),
       HOLDER_LABEL[c.holderType] || c.holderType,
@@ -1157,7 +1160,7 @@ document.getElementById("btnExportCsv").addEventListener("click", () => {
       (c.category === "debit" || c.category === "prepaid") ? "" : c.creditLimit,
       c.category === "debit" ? c.debitPerTxLimit : "", c.category === "debit" ? c.debitDailyLimit : "", c.category === "debit" ? c.debitMonthlyLimit : "",
       c.category === "prepaid" ? c.balanceAccount : "",
-      dayLabel(c.closingDay), dayLabel(c.paymentDay), c.paymentAccount,
+      dayLabel(c.closingDay), dayLabel(c.paymentDay), c.paymentAccount, c.branchName,
       c.linkedBankId ? bankName(c.linkedBankId) : "",
       c.cancelPlanned === "yes" ? "あり" : "なし", c.cancelNote, c.etcVehicle, c.memo
     ]);
