@@ -268,7 +268,19 @@ select {
 .badge.holder-family { background: #ffe4e6; color: #be123c; }
 .badge.badge-bank { background: #dbeafe; color: #1d4ed8; }
 .badge.badge-sync { background: #e0e7ff; color: #4338ca; }
+.badge.badge-card { background: #dbeafe; color: #1d4ed8; }
 .badge.cancel-yes { background: var(--color-danger-bg); color: var(--color-danger); }
+.badge.carrier-mainBrand { background: #dbeafe; color: #1d4ed8; }
+.badge.carrier-subBrand { background: #ede9fe; color: #6d28d9; }
+.badge.carrier-onlineBrand { background: #cffafe; color: #0e7490; }
+.badge.carrier-mvno { background: #dcfce7; color: #15803d; }
+.badge.mnp-eligible { background: #d1fae5; color: #059669; font-weight: 600; }
+.badge.mnp-soon { background: #fef3c7; color: #b45309; font-weight: 600; }
+.badge.mnp-notyet { background: var(--color-secondary); color: var(--color-text-muted); }
+.badge.ng-flag { background: var(--color-danger-bg); color: var(--color-danger); font-weight: 600; }
+.badge.discount-warning { background: #fef3c7; color: #b45309; }
+.badge.sim-physical { background: #e0e7ff; color: #4338ca; }
+.badge.sim-esim { background: #fce7f3; color: #be185d; }
 
 @media (prefers-color-scheme: dark) {
   .badge.category-credit { background: #1e3a8a55; color: #93c5fd; }
@@ -278,6 +290,17 @@ select {
   .badge.holder-family { background: #88132555; color: #fda4af; }
   .badge.badge-bank { background: #1e3a8a55; color: #93c5fd; }
   .badge.badge-sync { background: #3730a355; color: #c7d2fe; }
+  .badge.badge-card { background: #1e3a8a55; color: #93c5fd; }
+  .badge.carrier-mainBrand { background: #1e3a8a55; color: #93c5fd; }
+  .badge.carrier-subBrand { background: #4c1d9555; color: #c4b5fd; }
+  .badge.carrier-onlineBrand { background: #164e6355; color: #67e8f9; }
+  .badge.carrier-mvno { background: #14532d55; color: #86efac; }
+  .badge.mnp-eligible { background: #14532d55; color: #6ee7b7; }
+  .badge.mnp-soon { background: #78350f55; color: #fcd34d; }
+  .badge.ng-flag { background: #7f1d1d55; color: #fca5a5; }
+  .badge.discount-warning { background: #78350f55; color: #fcd34d; }
+  .badge.sim-physical { background: #3730a355; color: #a5b4fc; }
+  .badge.sim-esim { background: #83184155; color: #f9a8d4; }
 }
 
 .card-item-meta {
@@ -425,7 +448,7 @@ select {
   overflow-y: auto;
 }
 
-#cardForm label, #paymentForm label, #moveForm label, #withdrawalForm label, #bankForm label {
+#cardForm label, #paymentForm label, #moveForm label, #withdrawalForm label, #bankForm label, #simForm label {
   display: block;
   font-size: 0.85rem;
   color: var(--color-text-muted);
@@ -435,7 +458,8 @@ select {
 #cardForm input, #cardForm select, #cardForm textarea,
 #paymentForm input, #moveForm input, #moveForm select,
 #withdrawalForm input, #withdrawalForm select, #withdrawalForm textarea,
-#bankForm input, #bankForm select, #bankForm textarea {
+#bankForm input, #bankForm select, #bankForm textarea,
+#simForm input, #simForm select, #simForm textarea {
   display: block;
   width: 100%;
   margin-top: 4px;
@@ -445,6 +469,45 @@ select {
   background: var(--color-bg);
   color: var(--color-text);
   font-size: 1rem;
+}
+
+#simForm .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#simForm .checkbox-label input {
+  display: inline-block;
+  width: auto;
+  margin-top: 0;
+}
+
+.section-title {
+  margin: 20px 0 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.95rem;
+}
+
+.section-title:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.field-hint {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.derived-preview {
+  margin: -6px 0 14px;
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 .req {

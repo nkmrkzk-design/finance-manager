@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>カード・銀行管理</title>
-<meta name="description" content="クレジットカード等と、その引き落とし先の銀行口座をまとめて一元管理するツール">
+<title>カード・銀行・SIM管理</title>
+<meta name="description" content="クレジットカード・引き落とし先の銀行口座・通信回線(SIM)契約をまとめて一元管理するツール">
 <meta name="theme-color" content="#4f46e5">
 
 <!-- PWA -->
@@ -13,7 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="カード・銀行管理">
+<meta name="apple-mobile-web-app-title" content="カード・銀行・SIM管理">
 <link rel="icon" href="icons/icon-192.png">
 
 <link rel="stylesheet" href="style.css">
@@ -27,11 +27,13 @@
       <button id="btnBanks" class="btn btn-icon screen-only screen-bank" hidden aria-label="銀行を管理">🏦 銀行</button>
       <button id="btnAddCard" class="btn btn-primary btn-icon screen-only screen-card" aria-label="カードを追加">＋ 追加</button>
       <button id="btnAddWithdrawal" class="btn btn-primary btn-icon screen-only screen-bank" hidden aria-label="引き落としを追加">＋ 追加</button>
+      <button id="btnAddSim" class="btn btn-primary btn-icon screen-only screen-sim" hidden aria-label="回線を追加">＋ 追加</button>
     </div>
   </div>
   <nav class="tab-switcher">
     <button class="tab-btn active" data-screen="card" id="tabCard">💳 カード管理</button>
     <button class="tab-btn" data-screen="bank" id="tabBank">🏦 銀行管理</button>
+    <button class="tab-btn" data-screen="sim" id="tabSim">📱 SIM管理</button>
   </nav>
 </header>
 
@@ -139,6 +141,66 @@
 <main id="withdrawalList" class="card-list"></main>
 
 <p id="withdrawalEmptyState" class="empty-state" hidden>該当する引き落としがありません。</p>
+
+</section>
+
+<!-- ==================== SIM管理画面 ==================== -->
+<section id="screenSim" class="screen" hidden>
+
+<section id="simSummary" class="summary"></section>
+
+<section class="toolbar">
+  <input id="simSearchInput" type="search" placeholder="ブランド名・電話番号・契約者・備考で検索" autocomplete="off">
+  <div class="filter-row">
+    <select id="filterSimCarrierType">
+      <option value="">種別: すべて</option>
+      <option value="mainBrand">本ブランド</option>
+      <option value="subBrand">サブブランド</option>
+      <option value="onlineBrand">オンライン専用ブランド</option>
+      <option value="mvno">格安SIM</option>
+    </select>
+    <select id="filterSimNetworkType">
+      <option value="">回線キャリア: すべて</option>
+      <option value="docomo">docomo回線</option>
+      <option value="au">au回線</option>
+      <option value="softbank">SoftBank回線</option>
+      <option value="rakuten">楽天回線</option>
+      <option value="other">その他</option>
+    </select>
+    <select id="filterSimMnpEligible">
+      <option value="">MNP可能: すべて</option>
+      <option value="eligible">可能</option>
+      <option value="notyet">未経過</option>
+    </select>
+    <select id="filterSimNgFlag">
+      <option value="">審査NG: すべて</option>
+      <option value="yes">あり</option>
+      <option value="no">なし</option>
+    </select>
+    <select id="filterSimCancelStatus">
+      <option value="">状態: すべて</option>
+      <option value="active">契約中</option>
+      <option value="cancelPlanned">解約予定あり</option>
+      <option value="cancelled">解約済み</option>
+    </select>
+    <select id="sortSimKey">
+      <option value="contractDateDesc">並び替え: 契約日(新しい順)</option>
+      <option value="contractDateAsc">並び替え: 契約日(古い順)</option>
+      <option value="monthlyFee">並び替え: 月額料金</option>
+      <option value="costPerGB">並び替え: 円/GB</option>
+      <option value="nextMnpDate">並び替え: 次回MNP可能日</option>
+      <option value="contractCount">並び替え: 契約回数</option>
+    </select>
+  </div>
+  <p class="action-row">
+    <button id="btnImportLegacySim" type="button" class="btn-link">🗂 既存のSIM管理アプリのデータを読み込む</button>
+    <input id="legacySimImportFile" type="file" accept="application/json" hidden>
+  </p>
+</section>
+
+<main id="simList" class="card-list"></main>
+
+<p id="simEmptyState" class="empty-state" hidden>該当する回線がありません。</p>
 
 </section>
 
@@ -505,6 +567,208 @@
         </label>
         <div class="modal-actions">
           <button type="button" id="btnDeleteBank" class="btn btn-danger" hidden>この銀行を削除</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 回線追加・編集モーダル -->
+<div id="simModal" class="modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="simModalTitle">回線を追加</h2>
+      <button class="btn-close" data-close-modal aria-label="閉じる">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="simForm">
+        <input type="hidden" id="simId">
+
+        <h3 class="section-title">基本情報</h3>
+
+        <label>ブランド名 <span class="req">必須</span>
+          <input id="s_brandName" type="text" required placeholder="例: IIJmio、LINEMO、docomo">
+        </label>
+
+        <div class="field-row">
+          <label>通信回線の種別
+            <select id="s_carrierType">
+              <option value="mainBrand">本ブランド</option>
+              <option value="subBrand">サブブランド</option>
+              <option value="onlineBrand">オンライン専用ブランド</option>
+              <option value="mvno">格安SIM</option>
+            </select>
+          </label>
+          <label>回線キャリア(系列)
+            <select id="s_networkType">
+              <option value="docomo">docomo回線</option>
+              <option value="au">au回線</option>
+              <option value="softbank">SoftBank回線</option>
+              <option value="rakuten">楽天回線</option>
+              <option value="other">その他</option>
+            </select>
+          </label>
+        </div>
+
+        <label>電話番号
+          <input id="s_phoneNumber" type="tel" placeholder="例: 090-1234-5678">
+        </label>
+
+        <label>支払いカード(カード管理で登録したカード)
+          <select id="s_linkedCardId">
+            <option value="">未設定</option>
+          </select>
+        </label>
+
+        <h3 class="section-title">契約・MNP情報</h3>
+
+        <label>契約日 <span class="req">必須</span>
+          <input id="s_contractDate" type="date" required>
+        </label>
+        <p id="simMnpPreview" class="derived-preview"></p>
+
+        <label>新規契約 / MNP契約
+          <select id="s_contractType">
+            <option value="new">新規契約</option>
+            <option value="mnp">MNP契約</option>
+          </select>
+        </label>
+
+        <div id="wrap_simMnp" hidden>
+          <label>移行元キャリア
+            <input id="s_mnpFromCarrier" type="text" placeholder="例: docomo">
+          </label>
+        </div>
+
+        <label>契約回数(通算)
+          <input id="s_contractCount" type="number" step="1" min="0" placeholder="例: 2">
+          <span class="field-hint">このキャリア/系列での通算契約回数。アプリで管理していない過去の契約も含めて手入力してください。</span>
+        </label>
+
+        <div class="field-row">
+          <label>解約日(実際)
+            <input id="s_cancelDate" type="date">
+          </label>
+          <label>解約予定日
+            <input id="s_cancelPlannedDate" type="date">
+          </label>
+        </div>
+
+        <label>違約金・解除料(円)
+          <input id="s_terminationFee" type="number" step="1" min="0" placeholder="例: 0">
+        </label>
+        <label>解約理由
+          <textarea id="s_cancelReason" rows="2" placeholder="例: 料金が安いところへ移行"></textarea>
+        </label>
+
+        <h3 class="section-title">審査NG情報</h3>
+
+        <label>過去に審査NGがあったか
+          <select id="s_ngHistory">
+            <option value="no">なし</option>
+            <option value="yes">あり</option>
+          </select>
+        </label>
+
+        <div id="wrap_simNgDate" hidden>
+          <label>審査NG発生日
+            <input id="s_ngDate" type="date">
+          </label>
+          <p id="simNgPreview" class="derived-preview"></p>
+        </div>
+
+        <h3 class="section-title">料金・データ量</h3>
+
+        <label>毎月の料金(円)
+          <input id="s_monthlyFee" type="number" step="1" min="0" placeholder="例: 2000">
+        </label>
+
+        <label class="checkbox-label">
+          <input id="s_dataAllowanceUnlimited" type="checkbox">
+          無制限プラン
+        </label>
+
+        <div id="wrap_simDataAllowanceGB">
+          <label>毎月の使用可能ギガ(GB)
+            <input id="s_dataAllowanceGB" type="number" step="0.1" min="0" placeholder="例: 20">
+          </label>
+        </div>
+        <p id="simCostPerGBPreview" class="derived-preview"></p>
+
+        <div class="field-row">
+          <label>割引終了時期(値上げタイミング)
+            <input id="s_discountEndDate" type="date">
+          </label>
+          <label>割引終了後の想定月額(円)
+            <input id="s_priceAfterDiscountFee" type="number" step="1" min="0" placeholder="例: 3000">
+          </label>
+        </div>
+        <p id="simDiscountPreview" class="derived-preview"></p>
+
+        <h3 class="section-title">SIM・端末情報</h3>
+
+        <label>物理SIM / eSIM
+          <select id="s_simType">
+            <option value="physical">物理SIM</option>
+            <option value="esim">eSIM</option>
+          </select>
+        </label>
+
+        <div id="wrap_simCardNumberField" hidden>
+          <label>SIMカード番号
+            <input id="s_simCardNumber" type="text" placeholder="例: 8981100...">
+          </label>
+        </div>
+
+        <div class="field-row">
+          <label>回線契約者
+            <input id="s_contractHolder" type="text" placeholder="例: 本人">
+          </label>
+          <label>回線利用者
+            <input id="s_lineUser" type="text" placeholder="例: 本人">
+          </label>
+        </div>
+
+        <label>誰の何のスマホにSIMが入っているか
+          <input id="s_deviceNote" type="text" placeholder="例: おれのiPhone13mini">
+        </label>
+
+        <label>スマホと回線同時申込みしたか
+          <select id="s_simultaneousApplication">
+            <option value="no">なし</option>
+            <option value="yes">あり</option>
+          </select>
+        </label>
+
+        <h3 class="section-title">キャンペーン・その他</h3>
+
+        <label>キャンペーン利用有無
+          <select id="s_campaignUsed">
+            <option value="no">なし</option>
+            <option value="yes">あり</option>
+          </select>
+        </label>
+
+        <div id="wrap_simCampaignDetail" hidden>
+          <label>キャンペーン詳細
+            <textarea id="s_campaignDetail" rows="5" placeholder="例: 契約事務手数料無料+ポイント10000円分"></textarea>
+          </label>
+        </div>
+
+        <label>ポイントサイト経由の契約か
+          <select id="s_pointSiteUsed">
+            <option value="no">なし</option>
+            <option value="yes">あり</option>
+          </select>
+        </label>
+
+        <label>備考
+          <textarea id="s_memo" rows="2" placeholder="自由記入"></textarea>
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" id="btnDeleteSim" class="btn btn-danger" hidden>この回線を削除</button>
           <button type="submit" class="btn btn-primary">保存</button>
         </div>
       </form>

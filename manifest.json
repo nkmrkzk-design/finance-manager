@@ -1,7 +1,7 @@
 {
-  "name": "カード・銀行管理",
-  "short_name": "カード・銀行管理",
-  "description": "クレジットカード等と、その引き落とし先の銀行口座をまとめて一元管理するツール",
+  "name": "カード・銀行・SIM管理",
+  "short_name": "カード銀行SIM管理",
+  "description": "クレジットカード・引き落とし先の銀行口座・通信回線(SIM)契約をまとめて一元管理するツール",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
